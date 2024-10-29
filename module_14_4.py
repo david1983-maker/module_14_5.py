@@ -15,10 +15,18 @@ dp = Dispatcher(bot, storage=MemoryStorage())
 initiate_db()
 get_all_products()
 
-
 @dp.callback_query_handler(text='product_buying')
 async def send_confirm_message(call):
     await call.message.answer('Вы успешно приобрели продукт!')
+
+
+@dp.message_handler(text='Купить')
+async def get_buying_list(message):
+    for i in get_all_products():
+        await message.answer(f' Название:{i[1]} |  Описание:{i[2]} | Цена:{i[3]} ')
+        with open(f'files/product{i[0]}.png', 'rb') as img:
+            await message.answer_photo(img)
+    await message.answer('Выберите продукт для покупки: ', reply_markup=kb3)
 
 
 class RegistrationState(StatesGroup):
@@ -55,7 +63,7 @@ async def set_email(message, state):
 
 @dp.message_handler(state=RegistrationState.age)
 async def set_age(message, state):
-    await state.update_data(age=message.text)
+    await state.update_data(age=int(message.text))
     data = await state.get_data()
     crud_functions.add_user(data['username'], data['email'], data['age'])
     await message.answer('Регистрация пропрошла успешно')
@@ -68,27 +76,6 @@ class UserState(StatesGroup):
     weight = State()
 
 
-@dp.message_handler(text='Рассчитать')
-async def main_menu(message):
-    await message.answer('Выберите опцию: ', reply_markup=kb2)
-    await RegistrationState.username.set()
-
-
-@dp.message_handler(text='Купить')
-async def get_buying_list(message):
-    for i in get_all_products():
-        await message.answer(f' Название:{i[1]} |  Описание:{i[2]} | Цена:{i[3]} ')
-        with open(f'files/product{i[0]}.png', 'rb') as img:
-            await message.answer_photo(img)
-    await message.answer('Выберите продукт для покупки: ', reply_markup=kb3)
-
-
-@dp.callback_query_handler(text='colories')
-async def set_age(call):
-    await call.message.answer('Ввидите свой возраст')
-    await UserState.age.set()
-
-
 @dp.callback_query_handler(text='formulas')
 async def get_formulas(call):
     await call.message.answer('10 * вес + 6.25 * рост - 5 * возраст + 5')
@@ -97,6 +84,11 @@ async def get_formulas(call):
 @dp.message_handler(commands=['start'])
 async def start(message):
     await message.answer('Привет! Я бот помогающий твоему здоровью', reply_markup=kb)
+
+
+@dp.message_handler(text='Рассчитать')
+async def main_menu(message):
+    await message.answer('Выберите опцию: ', reply_markup=kb2)
 
 
 @dp.callback_query_handler(text='colories')
@@ -134,6 +126,9 @@ async def send_colories(message, state):
 @dp.message_handler()
 async def all_messages(message):
     await message.answer('Введите команду /start, чтобы начать общение')
+
+
+
 
 
 if __name__ == '__main__':
